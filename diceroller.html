@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- Updated viewport settings -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Dice Roller</title>
+    <title>Web Dice Roller (Polyhedral)</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Inter Font -->
@@ -33,29 +34,41 @@
             border-radius: 20px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             padding: 1.5rem;
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
         }
-        .dice-face {
-            height: 80px; 
-            display: flex;
-            flex-direction: column; /* Stack elements vertically */
-            justify-content: center; /* Vertical Center */
-            align-items: center;    /* Horizontal Center */
-            text-align: center;     
-            border-radius: 1rem; 
-            color: white;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        
+        /* Container for scaling and aspect ratio */
+        .dice-container {
+            width: 100%;
+            aspect-ratio: 1 / 1; 
             transition: transform 0.1s ease-out;
-            font-weight: 700;
-            line-height: 1; /* Reset line height for better vertical centering */
-            cursor: pointer; 
+            cursor: pointer;
+            line-height: 1; 
+            position: relative;
         }
-        .dice-face:active {
+        .dice-container:active {
             transform: scale(0.95);
         }
-        .die-type-button {
-            transition: all 0.15s ease;
-            flex-shrink: 1; /* Allow shrinkage */
+        
+        /* Styles for the simple SVG die */
+        .dice-svg {
+            width: 100%;
+            height: 100%;
         }
+
+        .die-type-button {
+            transition: all 0.2s ease-in-out; 
+            margin: 2px 0; 
+        }
+
+        /* Prevent shrinking on press for die type buttons. Use brightness change for feedback. */
+        .die-type-button:active {
+            transform: none !important; 
+            filter: brightness(0.85); /* Slightly darken on button press */
+        }
+
         /* Style for both Re-roll and Clear icons */
         #reroll-icon, #clear-icon {
             height: 40px; 
@@ -71,52 +84,66 @@
             transform: scale(0.9);
             background-color: rgba(255, 255, 255, 0.3);
         }
-        /* Remove min-height from dice-grid since parent now dictates fixed height */
-        #dice-grid {
-            /* min-height is no longer needed */
-        }
     </style>
 </head>
 <body>
 
-<div id="app-container" class="flex flex-col items-center">
+<div id="app-container">
     
-    <!-- Die Type Selector (Button Bar) -->
-    <div class="w-full mb-6">
-        <!-- Buttons now flex-wrap and use gap for spacing -->
-        <div id="die-type-buttons" class="flex flex-wrap justify-center gap-2 p-1 border border-gray-300 rounded-xl bg-gray-50">
-            <!-- Buttons injected here by JavaScript -->
-        </div>
-    </div>
-    
-    <!-- COMPACT RESULTS SECTION (Dice Grid + Total Score/Reroll/Clear) -->
-    <!-- NEW: Fixed height (h-48 = 192px) to prevent layout shifts -->
-    <div class="flex gap-3 w-full mb-8 h-48"> 
+    <!-- RESULTS SECTION (Dice Grid + Total Score/Reroll/Clear) -->
+    <div class="flex gap-3 w-full mb-8 h-96"> 
         
-        <!-- Dice Grid (Left, takes up more space) -->
-        <!-- NEW: h-full ensures it fills the fixed parent height -->
-        <div id="dice-grid" class="grid grid-cols-3 gap-2 flex-grow max-w-[75%] h-full">
+        <!-- Dice Grid -->
+        <div id="dice-grid" class="grid grid-cols-3 grid-rows-4 gap-2 flex-grow max-w-[75%] h-full">
             <!-- Dice will be injected here by JavaScript -->
         </div>
 
-        <!-- Total Score & Controls (Right, smaller sidebar) -->
-        <!-- NEW: h-full ensures it fills the fixed parent height -->
-        <div id="info-box" class="flex flex-col justify-between items-center p-3 bg-gray-700 rounded-xl shadow-lg w-1/4 min-w-[100px] max-w-[100px] h-full">
-            <!-- Total -->
-            <div class="text-center text-white">
-                <p class="text-sm font-semibold opacity-80 leading-tight">TOTAL</p>
-                <span id="total-score" class="text-4xl font-black transition duration-150 ease-in-out">0</span>
+        <!-- Total Score & Controls -->
+        <div id="info-box" class="flex flex-col justify-between items-center pt-4 px-3 pb-8 bg-gray-700 rounded-xl shadow-lg w-1/4 min-w-[100px] max-w-[100px] h-full">
+            
+            <!-- STATS CONTAINER (Total, Count, Min, Max, Avg) -->
+            <div class="flex flex-col gap-1 w-full mb-6">
+                
+                <!-- Total (Primary Stat) -->
+                <div id="total-stat" class="text-center text-white pb-1 border-b border-gray-600">
+                    <p class="text-xs font-semibold opacity-80 leading-tight">TOTAL</p>
+                    <span id="total-score" class="text-3xl font-black transition duration-150 ease-in-out">0</span>
+                </div>
+
+                <!-- COUNT (Secondary Stat) -->
+                <div id="count-stat" class="text-center text-white">
+                    <p class="text-xs font-semibold opacity-80 leading-tight">COUNT</p>
+                    <span id="count-score" class="text-xl font-bold">0</span>
+                </div>
+
+                <!-- MIN (Secondary Stat) -->
+                <div id="min-stat" class="text-center text-white">
+                    <p class="text-xs font-semibold opacity-80 leading-tight">MIN</p>
+                    <span id="min-score" class="text-xl font-bold">0</span>
+                </div>
+
+                <!-- MAX (Secondary Stat) -->
+                <div id="max-stat" class="text-center text-white">
+                    <p class="text-xs font-semibold opacity-80 leading-tight">MAX</p>
+                    <span id="max-score" class="text-xl font-bold">0</span>
+                </div>
+
+                <!-- AVG (Secondary Stat) -->
+                <div id="avg-stat" class="text-center text-white">
+                    <p class="text-xs font-semibold opacity-80 leading-tight">AVG</p>
+                    <span id="avg-score" class="text-xl font-bold">0.00</span>
+                </div>
             </div>
+            <!-- END STATS CONTAINER -->
             
             <!-- Re-roll and Clear Controls -->
-            <!-- ADDED: mb-3 to push the icons up slightly, creating better vertical separation -->
-            <div class="flex flex-col gap-2 mb-3"> 
+            <div class="flex flex-col gap-2"> 
                 <!-- Re-roll Icon Button -->
                 <button id="reroll-icon" class="text-white">
                     <i class="fas fa-redo-alt text-xl"></i>
                 </button>
                 
-                <!-- NEW: Clear Tray Icon Button -->
+                <!-- Clear Tray Icon Button -->
                 <button id="clear-icon" class="text-white">
                     <i class="fas fa-trash-alt text-xl"></i>
                 </button>
@@ -124,23 +151,75 @@
             
         </div>
     </div>
-    <!-- END COMPACT RESULTS SECTION -->
+    <!-- END RESULTS SECTION -->
+
+    <!-- Die Type Selector (Button Bar) -->
+    <div class="w-full mb-0">
+        <div id="die-type-buttons" class="flex justify-between gap-1 p-1 bg-white rounded-xl">
+            <!-- Buttons injected here by JavaScript -->
+        </div>
+    </div>
     
 </div>
 
 <script>
     // --- JavaScript Logic ---
-    const maxDice = 6;
-    const availableDieTypes = [4, 6, 8, 10, 12, 20, 100]; // D4 up to D100
+    const maxDice = 12;
+    const availableDieTypes = [4, 6, 8, 10, 12, 20]; 
     
-    // NEW STATE: Array of objects, allowing for mixed dice (e.g., D4, D20)
     let rolledDice = [];
     
-    const diceColors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-orange-500'];
-    
+    // A dictionary mapping die type to its basic SVG properties (path, viewbox, etc.)
+    const polyhedralSVGs = {
+        
+        4: {
+            viewBox: "0 0 100 100",
+            path: "M 50,5 L 95,90 L 5,90 Z",
+            numberX: 50,
+            numberY: 55, 
+            color: '#4c9f4e' // Green
+        },
+        6: {
+            viewBox: "0 0 100 100",
+            path: "M 10 10 L 90 10 L 90 90 L 10 90 Z",
+            numberX: 50,
+            numberY: 50, 
+            color: '#59bed0' // Teal
+        },
+        8: {
+            viewBox: "0 0 100 100",
+            path: "M 50 0 L 100 50 L 50 100 L 0 50 Z",
+            numberX: 50,
+            numberY: 47, 
+            color: '#8243cd' // Purple
+        },
+        10: {
+            viewBox: "0 0 100 100",
+            path: "M 50 0 L 95 35 L 95 65 L 50 100 L 5 65 L 5 35 Z", 
+            numberX: 50,
+            numberY: 50, 
+            color: '#d14193' // Pink
+        },
+        12: {
+            viewBox: "0 0 100 100",
+            path: "M 50 0 L 80 15 L 95 40 L 95 60 L 80 85 L 50 100 L 20 85 L 5 60 L 5 40 L 20 15 Z", 
+            numberX: 50,
+            numberY: 47, 
+            color: '#ca4947' // Red
+        },
+        20: {
+            viewBox: "0 0 100 100",
+            path: "M 50 0 L 90 30 L 90 70 L 50 100 L 10 70 L 10 30 Z", 
+            numberX: 50,
+            numberY: 50, 
+            color: '#e58531' // Orange
+        }
+    };
+    // ------------------------------------
+
     // Welcome Messages for the Empty Tray
     const welcomeMessages = [
-        "Let's Go Exploring",
+        "Let's Go Exploring!",
         "It's dangerous to go alone! Take this.",
         "Roll Initiative!",
         "A chance to change your fate.",
@@ -150,47 +229,78 @@
     // Reference to DOM elements
     const diceGrid = document.getElementById('dice-grid');
     const totalScoreElement = document.getElementById('total-score');
+    const countScoreElement = document.getElementById('count-score'); 
+    const minScoreElement = document.getElementById('min-score');
+    const maxScoreElement = document.getElementById('max-score');
+    const avgScoreElement = document.getElementById('avg-score');
+    
     const dieTypeButtonsContainer = document.getElementById('die-type-buttons');
     const rerollIcon = document.getElementById('reroll-icon');
     const clearIcon = document.getElementById('clear-icon');
 
-    // Track the currently selected die type (used for highlighting the last clicked button)
-    // Starts as null so no button is highlighted on load.
     let currentDieTypeSelection = null; 
 
     // --- Core Functions ---
 
-    // Utility function for inclusive random numbers
     function IntRandom(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    // 1. Renders a single die face
+    // Function to generate the polyhedral SVG
+    function createPolyhedralSVG(type, value) {
+        const svgData = polyhedralSVGs[type];
+        if (!svgData) return '';
+
+        const baseColor = svgData.color;
+        const contrastColor = '#fff'; 
+        
+        // The main SVG structure
+        return `
+            <svg class="dice-svg" viewBox="${svgData.viewBox}" xmlns="http://www.w3.org/2000/svg">
+                <path d="${svgData.path}" 
+                      fill="${baseColor}" 
+                      stroke="transparent" 
+                      stroke-width="0"/>
+                
+                <!-- Result Value (Large) -->
+                <text x="${svgData.numberX}" y="${svgData.numberY}" 
+                      fill="${contrastColor}" 
+                      text-anchor="middle" 
+                      dominant-baseline="middle"
+                      style="font-family: 'Inter', sans-serif; font-size: 30px; font-weight: 700; pointer-events: none;">
+                    ${value}
+                </text>
+                
+                <!-- Die Type Label (Small, D4, D6, etc.) -->
+                <text x="50" y="75" 
+                      fill="${contrastColor}" 
+                      text-anchor="middle" 
+                      dominant-baseline="middle"
+                      opacity="0.7"
+                      style="font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; pointer-events: none;">
+                    D${type}
+                </text>
+
+            </svg>
+        `;
+    }
+
+
+    // 1. Renders a single die face using SVG
     function createDiceFace(dieObject, index) {
         const container = document.createElement('div');
-        container.className = "w-full aspect-square";
+        container.className = "dice-container w-full"; 
         
-        const face = document.createElement('div');
-        
-        const dieType = dieObject.type;
-        const value = dieObject.result;
-        const colorClass = diceColors[index % diceColors.length];
-        
-        face.className = `dice-face ${colorClass} w-full h-full text-center`;
-        
-        // Use innerHTML to structure the two lines
-        face.innerHTML = `
-            <div class="text-4xl font-black">${value}</div>
-            <div class="text-sm font-semibold opacity-75 mt-0.5">D${dieType}</div>
-        `;
+        const svgContent = createPolyhedralSVG(dieObject.type, dieObject.result);
+
+        container.innerHTML = svgContent;
         
         // ATTACH CLICK LISTENER FOR REMOVAL
-        face.addEventListener('click', (e) => {
+        container.addEventListener('click', (e) => {
             e.stopPropagation(); 
             removeDie(index);
         });
         
-        container.appendChild(face);
         return container;
     }
 
@@ -202,23 +312,21 @@
             button.textContent = `D${type}`;
             button.dataset.dieType = type;
             
-            button.className = 'die-type-button px-3 py-1.5 text-md font-semibold rounded-full border-2 transition text-gray-700 border-gray-300 bg-white hover:bg-blue-50';
+            // Apply color from the SVG data
+            const dieColor = polyhedralSVGs[type].color;
+            button.style.backgroundColor = dieColor;
+            button.style.borderColor = dieColor; 
+            
+            // NOTE: Using 'border-4' (4px) to ensure fixed size for all buttons, preventing layout shift.
+            button.className = 'die-type-button flex-1 px-1 py-1.5 text-sm md:text-base font-semibold rounded-full border-4 transition text-white shadow-md hover:opacity-90 whitespace-nowrap opacity-75';
             
             button.addEventListener('click', handleDieTypeSelection);
             
             dieTypeButtonsContainer.appendChild(button);
-
-            // --- LAYOUT FIX: Force break after D10 (index 3) to create two rows ---
-            if (index === 3) { 
-                const breakDiv = document.createElement('div');
-                breakDiv.className = 'w-full h-0'; 
-                dieTypeButtonsContainer.appendChild(breakDiv);
-            }
-            // ----------------------------------------------------------------------
         });
     }
 
-    // NEW: Function to randomly select a message
+    // Function to randomly select a message
     function getEmptyTrayMessage() {
         const randomIndex = Math.floor(Math.random() * welcomeMessages.length);
         return welcomeMessages[randomIndex];
@@ -232,48 +340,68 @@
 
         // Enable/Disable the reroll and clear icons
         if (rolledDice.length === 0) {
-            // Use the new randomized message here
             const message = getEmptyTrayMessage(); 
             diceGrid.innerHTML = `<p class="text-center col-span-3 text-gray-500 text-lg py-4 flex items-center justify-center h-full">${message}</p>`;
-            totalScoreElement.textContent = 0;
-            rerollIcon.disabled = true;
-            clearIcon.disabled = true; // Disable clear when empty
-            rerollIcon.classList.add('opacity-50', 'cursor-not-allowed');
-            clearIcon.classList.add('opacity-50', 'cursor-not-allowed'); // Apply disabled style
             
-            // If the tray is empty, un-highlight the last selected button
+            // Reset all stats when the tray is empty
+            totalScoreElement.textContent = 0;
+            countScoreElement.textContent = 0;
+            minScoreElement.textContent = 0;
+            maxScoreElement.textContent = 0;
+            avgScoreElement.textContent = '0.00';
+
+            rerollIcon.disabled = true;
+            clearIcon.disabled = true; 
+            rerollIcon.classList.add('opacity-50', 'cursor-not-allowed');
+            clearIcon.classList.add('opacity-50', 'cursor-not-allowed'); 
+            
             currentDieTypeSelection = null; 
         } else {
             rerollIcon.disabled = false;
-            clearIcon.disabled = false; // Enable clear when dice are present
+            clearIcon.disabled = false; 
             rerollIcon.classList.remove('opacity-50', 'cursor-not-allowed');
-            clearIcon.classList.remove('opacity-50', 'cursor-not-allowed'); // Remove disabled style
+            clearIcon.classList.remove('opacity-50', 'cursor-not-allowed'); 
             
+            const results = rolledDice.map(die => die.result);
+
+            // Calculate total and render dice
             rolledDice.forEach((die, index) => {
                 const diceElement = createDiceFace(die, index); 
                 diceGrid.appendChild(diceElement);
                 total += die.result;
             });
+            
+            // Calculate new stats
+            const count = rolledDice.length;
+            const min = Math.min(...results);
+            const max = Math.max(...results);
+            const avg = total / count;
+
+            // Update DOM
             totalScoreElement.textContent = total;
+            countScoreElement.textContent = count;
+            minScoreElement.textContent = min === Infinity ? 0 : min; 
+            maxScoreElement.textContent = max === -Infinity ? 0 : max; 
+            avgScoreElement.textContent = avg.toFixed(2); 
         }
 
         // Highlight the last selected die type button
         dieTypeButtonsContainer.querySelectorAll('.die-type-button').forEach(button => {
             const buttonType = parseInt(button.dataset.dieType);
+            const dieColor = polyhedralSVGs[buttonType].color;
             
-            // Check against currentDieTypeSelection (which can be null)
             if (buttonType === currentDieTypeSelection) {
-                // Active style
-                button.classList.add('bg-blue-600', 'text-white', 'border-blue-600', 'shadow-md');
-                button.classList.remove('bg-white', 'text-gray-700', 'border-gray-300', 'hover:bg-blue-50');
+                // Active style: Light gray border for highlight, strong shadow, full opacity
+                button.classList.add('shadow-xl');
+                button.classList.remove('opacity-75'); 
             } else {
-                // Inactive style
-                button.classList.remove('bg-blue-600', 'text-white', 'border-blue-600', 'shadow-md');
-                button.classList.add('bg-white', 'text-gray-700', 'border-gray-300', 'hover:bg-blue-50');
+                // Inactive style: Border color matches background (visually hidden), standard shadow, dimmed opacity
+                button.style.borderColor = dieColor; 
+                button.classList.remove('shadow-xl');
+                button.classList.add('opacity-75');
             }
         });
         
-        // Use a slight vibration for feedback on mobile devices
         if (navigator.vibrate) {
             navigator.vibrate(50); 
         }
@@ -308,6 +436,7 @@
             });
             renderUI(); 
         } else {
+            // Original user code for limit reached (alertMessage function)
             alertMessage(`Maximum of ${maxDice} dice reached!`);
         }
     }
@@ -345,10 +474,9 @@
         clearIcon.addEventListener('click', clearDice);
 
         // --- Initial State: Start with an empty tray ---
-        // currentDieTypeSelection is already null, so no highlight
         rolledDice = [];
         
-        // Render the UI based on the initial state (will show "Let's Go Exploring")
+        // Render the UI based on the initial state
         renderUI(); 
     }
 
