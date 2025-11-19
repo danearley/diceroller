@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Dice Roller</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <!-- Font Awesome for the Re-roll Icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        /* Custom CSS to ensure it looks good and acts like an app */
+        :root {
+            --primary-color: #3b82f6; /* Blue 500 */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            -webkit-user-select: none;
+            user-select: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        #app-container {
+            max-width: 450px;
+            width: 100%;
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+        }
+        .dice-face {
+            height: 80px; 
+            display: flex;
+            flex-direction: column; /* Stack elements vertically */
+            justify-content: center; /* Vertical Center */
+            align-items: center;    /* Horizontal Center */
+            text-align: center;     
+            border-radius: 1rem; 
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: transform 0.1s ease-out;
+            font-weight: 700;
+            line-height: 1; /* Reset line height for better vertical centering */
+            cursor: pointer; 
+        }
+        .dice-face:active {
+            transform: scale(0.95);
+        }
+        .die-type-button {
+            transition: all 0.15s ease;
+            flex-shrink: 1; /* Allow shrinkage */
+        }
+        /* Style for both Re-roll and Clear icons */
+        #reroll-icon, #clear-icon {
+            height: 40px; 
+            width: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.15);
+            transition: all 0.15s ease;
+        }
+        #reroll-icon:active, #clear-icon:active {
+            transform: scale(0.9);
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        /* Remove min-height from dice-grid since parent now dictates fixed height */
+        #dice-grid {
+            /* min-height is no longer needed */
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-container" class="flex flex-col items-center">
+    
+    <!-- Die Type Selector (Button Bar) -->
+    <div class="w-full mb-6">
+        <!-- Buttons now flex-wrap and use gap for spacing -->
+        <div id="die-type-buttons" class="flex flex-wrap justify-center gap-2 p-1 border border-gray-300 rounded-xl bg-gray-50">
+            <!-- Buttons injected here by JavaScript -->
+        </div>
+    </div>
+    
+    <!-- COMPACT RESULTS SECTION (Dice Grid + Total Score/Reroll/Clear) -->
+    <!-- NEW: Fixed height (h-48 = 192px) to prevent layout shifts -->
+    <div class="flex gap-3 w-full mb-8 h-48"> 
+        
+        <!-- Dice Grid (Left, takes up more space) -->
+        <!-- NEW: h-full ensures it fills the fixed parent height -->
+        <div id="dice-grid" class="grid grid-cols-3 gap-2 flex-grow max-w-[75%] h-full">
+            <!-- Dice will be injected here by JavaScript -->
+        </div>
+
+        <!-- Total Score & Controls (Right, smaller sidebar) -->
+        <!-- NEW: h-full ensures it fills the fixed parent height -->
+        <div id="info-box" class="flex flex-col justify-between items-center p-3 bg-gray-700 rounded-xl shadow-lg w-1/4 min-w-[100px] max-w-[100px] h-full">
+            <!-- Total -->
+            <div class="text-center text-white">
+                <p class="text-sm font-semibold opacity-80 leading-tight">TOTAL</p>
+                <span id="total-score" class="text-4xl font-black transition duration-150 ease-in-out">0</span>
+            </div>
+            
+            <!-- Re-roll and Clear Controls -->
+            <!-- ADDED: mb-3 to push the icons up slightly, creating better vertical separation -->
+            <div class="flex flex-col gap-2 mb-3"> 
+                <!-- Re-roll Icon Button -->
+                <button id="reroll-icon" class="text-white">
+                    <i class="fas fa-redo-alt text-xl"></i>
+                </button>
+                
+                <!-- NEW: Clear Tray Icon Button -->
+                <button id="clear-icon" class="text-white">
+                    <i class="fas fa-trash-alt text-xl"></i>
+                </button>
+            </div>
+            
+        </div>
+    </div>
+    <!-- END COMPACT RESULTS SECTION -->
+    
+</div>
+
+<script>
+    // --- JavaScript Logic ---
+    const maxDice = 6;
+    const availableDieTypes = [4, 6, 8, 10, 12, 20, 100]; // D4 up to D100
+    
+    // NEW STATE: Array of objects, allowing for mixed dice (e.g., D4, D20)
+    let rolledDice = [];
+    
+    const diceColors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-orange-500'];
+    
+    // Welcome Messages for the Empty Tray
+    const welcomeMessages = [
+        "Let's Go Exploring",
+        "It's dangerous to go alone! Take this.",
+        "Roll Initiative!",
+        "A chance to change your fate.",
+        "I have a bad feeling about this."
+    ];
+
+    // Reference to DOM elements
+    const diceGrid = document.getElementById('dice-grid');
+    const totalScoreElement = document.getElementById('total-score');
+    const dieTypeButtonsContainer = document.getElementById('die-type-buttons');
+    const rerollIcon = document.getElementById('reroll-icon');
+    const clearIcon = document.getElementById('clear-icon');
+
+    // Track the currently selected die type (used for highlighting the last clicked button)
+    // Starts as null so no button is highlighted on load.
+    let currentDieTypeSelection = null; 
+
+    // --- Core Functions ---
+
+    // Utility function for inclusive random numbers
+    function IntRandom(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    // 1. Renders a single die face
+    function createDiceFace(dieObject, index) {
+        const container = document.createElement('div');
+        container.className = "w-full aspect-square";
+        
+        const face = document.createElement('div');
+        
+        const dieType = dieObject.type;
+        const value = dieObject.result;
+        const colorClass = diceColors[index % diceColors.length];
+        
+        face.className = `dice-face ${colorClass} w-full h-full text-center`;
+        
+        // Use innerHTML to structure the two lines
+        face.innerHTML = `
+            <div class="text-4xl font-black">${value}</div>
+            <div class="text-sm font-semibold opacity-75 mt-0.5">D${dieType}</div>
+        `;
+        
+        // ATTACH CLICK LISTENER FOR REMOVAL
+        face.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            removeDie(index);
+        });
+        
+        container.appendChild(face);
+        return container;
+    }
+
+    // 2. Creates the clickable die type buttons (D4, D6, etc.)
+    function createDieTypeButtons() {
+        dieTypeButtonsContainer.innerHTML = '';
+        availableDieTypes.forEach((type, index) => {
+            const button = document.createElement('button');
+            button.textContent = `D${type}`;
+            button.dataset.dieType = type;
+            
+            button.className = 'die-type-button px-3 py-1.5 text-md font-semibold rounded-full border-2 transition text-gray-700 border-gray-300 bg-white hover:bg-blue-50';
+            
+            button.addEventListener('click', handleDieTypeSelection);
+            
+            dieTypeButtonsContainer.appendChild(button);
+
+            // --- LAYOUT FIX: Force break after D10 (index 3) to create two rows ---
+            if (index === 3) { 
+                const breakDiv = document.createElement('div');
+                breakDiv.className = 'w-full h-0'; 
+                dieTypeButtonsContainer.appendChild(breakDiv);
+            }
+            // ----------------------------------------------------------------------
+        });
+    }
+
+    // NEW: Function to randomly select a message
+    function getEmptyTrayMessage() {
+        const randomIndex = Math.floor(Math.random() * welcomeMessages.length);
+        return welcomeMessages[randomIndex];
+    }
+
+
+    // 3. Updates the UI based on the current state (rolledDice array)
+    function renderUI() {
+        diceGrid.innerHTML = ''; // Clear previous dice
+        let total = 0;
+
+        // Enable/Disable the reroll and clear icons
+        if (rolledDice.length === 0) {
+            // Use the new randomized message here
+            const message = getEmptyTrayMessage(); 
+            diceGrid.innerHTML = `<p class="text-center col-span-3 text-gray-500 text-lg py-4 flex items-center justify-center h-full">${message}</p>`;
+            totalScoreElement.textContent = 0;
+            rerollIcon.disabled = true;
+            clearIcon.disabled = true; // Disable clear when empty
+            rerollIcon.classList.add('opacity-50', 'cursor-not-allowed');
+            clearIcon.classList.add('opacity-50', 'cursor-not-allowed'); // Apply disabled style
+            
+            // If the tray is empty, un-highlight the last selected button
+            currentDieTypeSelection = null; 
+        } else {
+            rerollIcon.disabled = false;
+            clearIcon.disabled = false; // Enable clear when dice are present
+            rerollIcon.classList.remove('opacity-50', 'cursor-not-allowed');
+            clearIcon.classList.remove('opacity-50', 'cursor-not-allowed'); // Remove disabled style
+            
+            rolledDice.forEach((die, index) => {
+                const diceElement = createDiceFace(die, index); 
+                diceGrid.appendChild(diceElement);
+                total += die.result;
+            });
+            totalScoreElement.textContent = total;
+        }
+
+        // Highlight the last selected die type button
+        dieTypeButtonsContainer.querySelectorAll('.die-type-button').forEach(button => {
+            const buttonType = parseInt(button.dataset.dieType);
+            
+            // Check against currentDieTypeSelection (which can be null)
+            if (buttonType === currentDieTypeSelection) {
+                // Active style
+                button.classList.add('bg-blue-600', 'text-white', 'border-blue-600', 'shadow-md');
+                button.classList.remove('bg-white', 'text-gray-700', 'border-gray-300', 'hover:bg-blue-50');
+            } else {
+                // Inactive style
+                button.classList.remove('bg-blue-600', 'text-white', 'border-blue-600', 'shadow-md');
+                button.classList.add('bg-white', 'text-gray-700', 'border-gray-300', 'hover:bg-blue-50');
+            }
+        });
+        
+        // Use a slight vibration for feedback on mobile devices
+        if (navigator.vibrate) {
+            navigator.vibrate(50); 
+        }
+    }
+
+    // 4. Rolls all dice and updates the UI (SYNCHRONOUS/INSTANT)
+    function rollDice() {
+        if (rolledDice.length === 0 || rerollIcon.disabled) return;
+        
+        // Immediately roll all dice
+        rolledDice = rolledDice.map(die => ({
+            type: die.type,
+            result: IntRandom(1, die.type)
+        }));
+        
+        // Immediately render the final result
+        renderUI();
+    }
+
+    // 5. Handles die type selection (click) - ADDS A DIE
+    function handleDieTypeSelection(event) {
+        const buttonElement = event.currentTarget;
+        const newDieType = parseInt(buttonElement.dataset.dieType, 10);
+        currentDieTypeSelection = newDieType; 
+        
+        // ADD a new die of the selected type
+        if (rolledDice.length < maxDice) {
+            rolledDice.push({
+                type: newDieType,
+                // Assign a random result immediately
+                result: IntRandom(1, newDieType)
+            });
+            renderUI(); 
+        } else {
+            alertMessage(`Maximum of ${maxDice} dice reached!`);
+        }
+    }
+
+    // 6. Handles removing a specific die (click on die face)
+    function removeDie(index) {
+        if (rolledDice.length > 0) {
+            rolledDice.splice(index, 1);
+            renderUI();
+        }
+    }
+    
+    // 7. Clears the entire tray
+    function clearDice() {
+        if (rolledDice.length > 0) {
+            rolledDice = []; // Reset the array to empty
+            renderUI(); // Render the empty state
+        }
+    }
+    
+    // Custom Alert/Message Box (since we cannot use window.alert)
+    function alertMessage(message) {
+        // Simple console message for now, as full custom modal is complex.
+        console.log("ALERT:", message); 
+    }
+
+    // --- Initialization ---
+
+    function initializeApp() {
+        // Create the buttons first (attaches click listeners)
+        createDieTypeButtons();
+        
+        // Attach roll and clear functionality
+        rerollIcon.addEventListener('click', rollDice);
+        clearIcon.addEventListener('click', clearDice);
+
+        // --- Initial State: Start with an empty tray ---
+        // currentDieTypeSelection is already null, so no highlight
+        rolledDice = [];
+        
+        // Render the UI based on the initial state (will show "Let's Go Exploring")
+        renderUI(); 
+    }
+
+    // Start the app immediately after script execution
+    initializeApp();
+</script>
+
+</body>
+</html>
