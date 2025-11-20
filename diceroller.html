@@ -2,14 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Updated viewport settings -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Dice Roller</title>
-    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
-    <!-- Font Awesome for the Re-roll Icon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         /* Custom CSS to ensure it looks good and acts like an app */
@@ -26,6 +22,7 @@
             align-items: center;
             min-height: 100vh;
             padding: 1rem;
+            touch-action: manipulation;
         }
         #app-container {
             max-width: 450px;
@@ -37,6 +34,7 @@
             display: flex; 
             flex-direction: column;
             align-items: center;
+            touch-action: manipulation;
         }
         
         /* Container for scaling and aspect ratio */
@@ -90,60 +88,45 @@
 
 <div id="app-container">
     
-    <!-- RESULTS SECTION (Dice Grid + Total Score/Reroll/Clear) -->
     <div class="flex gap-3 w-full mb-8 h-96"> 
         
-        <!-- Dice Grid -->
         <div id="dice-grid" class="grid grid-cols-3 grid-rows-4 gap-2 flex-grow max-w-[75%] h-full">
-            <!-- Dice will be injected here by JavaScript -->
-        </div>
+            </div>
 
-        <!-- Total Score & Controls -->
         <div id="info-box" class="flex flex-col justify-between items-center pt-4 px-3 pb-8 bg-gray-700 rounded-xl shadow-lg w-1/4 min-w-[100px] max-w-[100px] h-full">
             
-            <!-- STATS CONTAINER (Total, Count, Min, Max, Avg) -->
             <div class="flex flex-col gap-1 w-full mb-6">
                 
-                <!-- Total (Primary Stat) -->
                 <div id="total-stat" class="text-center text-white pb-1 border-b border-gray-600">
                     <p class="text-xs font-semibold opacity-80 leading-tight">TOTAL</p>
                     <span id="total-score" class="text-3xl font-black transition duration-150 ease-in-out">0</span>
                 </div>
 
-                <!-- COUNT (Secondary Stat) -->
                 <div id="count-stat" class="text-center text-white">
                     <p class="text-xs font-semibold opacity-80 leading-tight">COUNT</p>
                     <span id="count-score" class="text-xl font-bold">0</span>
                 </div>
 
-                <!-- MIN (Secondary Stat) -->
                 <div id="min-stat" class="text-center text-white">
                     <p class="text-xs font-semibold opacity-80 leading-tight">MIN</p>
                     <span id="min-score" class="text-xl font-bold">0</span>
                 </div>
 
-                <!-- MAX (Secondary Stat) -->
                 <div id="max-stat" class="text-center text-white">
                     <p class="text-xs font-semibold opacity-80 leading-tight">MAX</p>
                     <span id="max-score" class="text-xl font-bold">0</span>
                 </div>
 
-                <!-- AVG (Secondary Stat) -->
                 <div id="avg-stat" class="text-center text-white">
                     <p class="text-xs font-semibold opacity-80 leading-tight">AVG</p>
                     <span id="avg-score" class="text-xl font-bold">0.00</span>
                 </div>
             </div>
-            <!-- END STATS CONTAINER -->
-            
-            <!-- Re-roll and Clear Controls -->
             <div class="flex flex-col gap-2"> 
-                <!-- Re-roll Icon Button -->
                 <button id="reroll-icon" class="text-white">
                     <i class="fas fa-redo-alt text-xl"></i>
                 </button>
                 
-                <!-- Clear Tray Icon Button -->
                 <button id="clear-icon" class="text-white">
                     <i class="fas fa-trash-alt text-xl"></i>
                 </button>
@@ -151,13 +134,9 @@
             
         </div>
     </div>
-    <!-- END RESULTS SECTION -->
-
-    <!-- Die Type Selector (Button Bar) -->
     <div class="w-full mb-0">
         <div id="die-type-buttons" class="flex justify-between gap-1 p-1 bg-white rounded-xl">
-            <!-- Buttons injected here by JavaScript -->
-        </div>
+            </div>
     </div>
     
 </div>
@@ -262,7 +241,6 @@
                       stroke="transparent" 
                       stroke-width="0"/>
                 
-                <!-- Result Value (Large) -->
                 <text x="${svgData.numberX}" y="${svgData.numberY}" 
                       fill="${contrastColor}" 
                       text-anchor="middle" 
@@ -271,7 +249,6 @@
                     ${value}
                 </text>
                 
-                <!-- Die Type Label (Small, D4, D6, etc.) -->
                 <text x="50" y="75" 
                       fill="${contrastColor}" 
                       text-anchor="middle" 
@@ -395,7 +372,7 @@
                 button.classList.add('shadow-xl');
                 button.classList.remove('opacity-75'); 
             } else {
-                // Inactive style: Border color matches background (visually hidden), standard shadow, dimmed opacity
+                // Inactive style: Border color matches background, standard shadow, dimmed opacity
                 button.style.borderColor = dieColor; 
                 button.classList.remove('shadow-xl');
                 button.classList.add('opacity-75');
