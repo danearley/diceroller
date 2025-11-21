@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dice Roller</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
@@ -93,6 +93,12 @@
         .dark #die-type-buttons {
             background-color: #1f2937; 
         }
+        .theme-mode-btn, .die-type-button {
+            font-size: 16px !important; 
+        }
+        #empty-tray-message {
+            color: #6b7280; 
+        }
         .dark #empty-tray-message {
             color: #ffffff; 
         }
@@ -180,8 +186,7 @@
         
         <!-- Welcome Message -->
         <div class="flex-grow flex items-center justify-center">
-            <p id="empty-tray-message" class="text-center text-gray-500 dark:text-white text-lg sm:text-xl">
-                <!-- Content filled by JS -->
+            <p id="empty-tray-message" class="text-center text-lg sm:text-xl">
             </p>
         </div>
         
@@ -331,7 +336,7 @@
             const toggleTemplate = document.getElementById('theme-toggle-template');
             
             const wrapper = document.createElement('div');
-            wrapper.className = 'col-span-3 h-full w-full';
+            wrapper.className = 'col-span-3 h-full w-full'; 
             wrapper.innerHTML = toggleTemplate.innerHTML;
             
             wrapper.querySelector('#empty-tray-message').textContent = getEmptyTrayMessage();
